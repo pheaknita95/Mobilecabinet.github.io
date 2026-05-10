@@ -1,0 +1,526 @@
+va<!DOCTYPE html>
+<html lang="km">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Invoice System - Reaksa Ads Solution</title>
+    
+    <link href="https://fonts.googleapis.com/css2?family=Battambang:wght@400;700&family=Kantumruy+Pro:wght@300;400;700&family=Koulen&family=Moul&display=swap" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+
+    <style>
+        /* === CORE SETTINGS === */
+        * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+        :root {
+            --primary: #1f506e; 
+            --accent: #d4af37;
+            --bg-body: #1a1a2e;
+            --font-main: 'Battambang', sans-serif;
+            --font-header: 'Moul', serif;
+        }
+
+        body { 
+            font-family: var(--font-main); 
+            background-color: var(--bg-body); 
+            margin: 0; padding: 0; 
+            display: flex; justify-content: center; min-height: 100vh;
+            overflow-x: hidden;
+        }
+
+        /* === 🎮 MAGIC CONTROL PANEL (FLOATING) === */
+        .control-panel {
+            position: fixed; bottom: 30px; left: 50%; transform: translateX(-50%);
+            background: rgba(255, 255, 255, 0.9);
+            backdrop-filter: blur(15px);
+            padding: 10px 20px; border-radius: 50px;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.5);
+            display: flex; align-items: center; gap: 15px;
+            z-index: 1000; border: 1px solid rgba(255,255,255,0.2);
+            animation: floatUp 0.5s ease-out;
+        }
+
+        @keyframes floatUp { from { transform: translate(-50%, 100%); } to { transform: translate(-50%, 0); } }
+
+        /* SWITCHER WITH ANIMATION */
+        .theme-switcher {
+            display: flex; align-items: center; gap: 10px;
+            background: #f1f5f9; padding: 5px; border-radius: 30px;
+        }
+        
+        .nav-btn {
+            width: 40px; height: 40px; border: none; border-radius: 50%;
+            background: white; color: #333; font-size: 18px; cursor: pointer;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1); transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            display: flex; align-items: center; justify-content: center;
+        }
+        .nav-btn:hover { background: var(--primary); color: white; transform: scale(1.1); }
+        .nav-btn:active { transform: scale(0.9); }
+
+        .theme-info { text-align: center; width: 120px; }
+        .theme-name { font-size: 12px; font-weight: bold; color: #333; display: block; }
+        .theme-dots { display: flex; justify-content: center; gap: 3px; margin-top: 2px; }
+        .dot { width: 6px; height: 6px; background: #ccc; border-radius: 50%; transition: 0.3s; }
+        .dot.active { background: var(--primary); transform: scale(1.2); }
+
+        /* ACTION BUTTONS */
+        .action-btn {
+            width: 45px; height: 45px; border-radius: 50%; border: none;
+            color: white; font-size: 18px; cursor: pointer;
+            display: flex; align-items: center; justify-content: center;
+            transition: all 0.3s;
+        }
+        .btn-print { background: #334155; }
+        .btn-save { background: linear-gradient(135deg, #d4af37, #f59e0b); box-shadow: 0 0 15px rgba(245, 158, 11, 0.4); }
+        
+        .action-btn:hover { transform: translateY(-3px) rotate(10deg); }
+
+        /* === 📄 INVOICE CONTAINER === */
+        .invoice-wrapper { margin: 40px 0 120px 0; perspective: 1000px; }
+        
+        .invoice-container {
+            width: 210mm; min-height: 297mm; 
+            background: white; padding: 40px;
+            position: relative; overflow: hidden;
+            box-shadow: 0 20px 50px rgba(0,0,0,0.3);
+            transition: all 0.5s cubic-bezier(0.25, 0.8, 0.25, 1);
+            transform-origin: top center;
+        }
+
+        /* === 🎨 THEME STYLES (THE MAGIC) === */
+
+        /* 💎 THEME 1: PREMIUM GOLD (Luxury) */
+        .style-premium .header-section {
+            background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);
+            color: white; padding: 40px; margin: -40px -40px 30px -40px;
+            clip-path: polygon(0 0, 100% 0, 100% 85%, 0 100%);
+            display: flex; justify-content: space-between; align-items: flex-start;
+        }
+        .style-premium .company-name { color: #d4af37; text-shadow: 0 2px 4px rgba(0,0,0,0.5); }
+        .style-premium .customer-card { border-left: 5px solid #d4af37; }
+        .style-premium th { background: #f1f5f9; color: #333; border-bottom: 2px solid #ddd; }
+        .style-premium .total-box { background: #0f172a; color: white; }
+        .style-premium .grand-total { color: #d4af37; }
+        .style-premium .watermark { display: block; opacity: 0.05; position: absolute; top: 40%; left: 50%; transform: translate(-50%, -50%) rotate(-30deg); width: 80%; pointer-events: none; }
+
+        /* 🔷 THEME 2: MODERN BLUE (Clean) */
+        .style-modern .header-section {
+            background: #1f506e; color: white; padding: 30px; margin: -40px -40px 30px -40px;
+            display: flex; justify-content: space-between; align-items: center;
+        }
+        .style-modern .company-name { color: white; }
+        .style-modern th { background: #1f506e; color: white; }
+        .style-modern .total-box { background: #1f506e; color: white; }
+        .style-modern .watermark { display: none; }
+
+        /* 📄 THEME 3: ORIGINAL (Classic Layout) */
+        .style-original .header-section {
+            background: white; color: #333; padding: 0; margin-bottom: 20px;
+            display: grid; grid-template-columns: 140px 1fr 200px; gap: 20px; align-items: center; border-bottom: 2px solid #1f506e; padding-bottom: 20px;
+        }
+        .style-original .logo-area { grid-column: 1; }
+        .style-original .company-info { grid-column: 2; text-align: center; }
+        .style-original .invoice-meta { grid-column: 3; text-align: right; border-left: 2px solid #eee; padding-left: 10px;}
+        .style-original .company-name { color: #1f506e; font-size: 28px; }
+        .style-original th { background: #1f506e; color: white; }
+        .style-original .total-box { background: white; color: #333; border: 2px solid #1f506e; }
+        .style-original .total-box input { color: #333; border-bottom: 1px solid #ccc; }
+        .style-original .watermark { display: none; }
+
+        /* 🔴 THEME 4: RED CORPORATE */
+        .style-red .header-section {
+            background: #b91c1c; color: white; padding: 30px; margin: -40px -40px 30px -40px;
+            border-bottom: 5px solid #7f1d1d; display: flex; justify-content: space-between;
+        }
+        .style-red th { background: #b91c1c; color: white; }
+        .style-red .total-box { background: #b91c1c; color: white; }
+        .style-red .company-name { color: white; }
+        .style-red .watermark { display: none; }
+
+        /* ⚫ THEME 5: MINIMALIST */
+        .style-minimal .header-section {
+            background: white; color: black; border-bottom: 2px solid black; padding-bottom: 20px; margin-bottom: 30px;
+            display: flex; justify-content: space-between; align-items: flex-end;
+        }
+        .style-minimal .company-name { color: black; letter-spacing: 2px; }
+        .style-minimal th { border-top: 2px solid black; border-bottom: 2px solid black; background: white; color: black; }
+        .style-minimal .total-box { background: #f9f9f9; color: black; border: 1px solid #ddd; }
+        .style-minimal .total-box input { color: black; border-bottom: 1px solid #aaa; }
+        .style-minimal .watermark { display: none; }
+
+        /* === COMMON ELEMENTS === */
+        .logo-area {
+            width: 130px; height: 130px; 
+            border: 2px dashed rgba(150,150,150,0.5); border-radius: 8px;
+            display: flex; align-items: center; justify-content: center; cursor: pointer; overflow: hidden;
+            background: rgba(255,255,255,0.1); transition: 0.3s;
+        }
+        .logo-area:hover { background: rgba(255,255,255,0.3); border-color: white; }
+        .style-original .logo-area, .style-minimal .logo-area { border-color: #ccc; background: white; }
+        
+        img { max-width: 100%; max-height: 100%; object-fit: contain; }
+        
+        .company-name { font-family: 'Moul', serif; font-size: 28px; margin-bottom: 5px; line-height: 1.2; }
+        .customer-card { background: #f8fafc; padding: 15px; border-radius: 8px; margin-bottom: 20px; display: flex; justify-content: space-between; }
+        
+        .desc-box { background: #fff; border: 1px solid #e2e8f0; padding: 15px; border-radius: 8px; margin-bottom: 20px; font-size: 14px; line-height: 1.6; }
+        
+        .blueprint-box { 
+            height: 200px; border: 2px dashed #cbd5e1; border-radius: 8px; margin-bottom: 20px;
+            display: flex; align-items: center; justify-content: center; color: #94a3b8; cursor: pointer;
+        }
+        
+        table { width: 100%; border-collapse: collapse; margin-bottom: 20px; }
+        th, td { padding: 12px; text-align: center; }
+        td { border-bottom: 1px solid #eee; }
+        
+        .total-box { padding: 20px; border-radius: 12px; width: 45%; margin-left: auto; }
+        .grand-total { font-size: 20px; font-weight: bold; border-top: 1px solid rgba(255,255,255,0.2); padding-top: 10px; margin-top: 10px; }
+        
+        input { background: transparent; border: none; outline: none; width: 100%; font-family: inherit; font-weight: bold; color: inherit; }
+        [contenteditable]:hover { outline: 1px dashed #ccc; background: rgba(255,255,0,0.1); }
+
+        /* Add Button */
+        .add-btn { width: 100%; padding: 10px; border: 2px dashed #cbd5e1; background: white; color: #64748b; border-radius: 8px; cursor: pointer; font-weight: bold; margin-bottom: 20px; }
+        .add-btn:hover { border-color: var(--primary); color: var(--primary); }
+
+        @media print {
+            .control-panel { display: none !important; }
+            .invoice-wrapper { margin: 0; perspective: none; }
+            .invoice-container { box-shadow: none; margin: 0; width: 100%; }
+            body { background: white; }
+            .header-section, .total-box, th { -webkit-print-color-adjust: exact; }
+            .add-btn, .delete-btn { display: none !important; }
+        }
+    </style>
+</head>
+<body>
+
+    <div class="control-panel">
+        <div class="theme-switcher">
+            <button class="nav-btn" onclick="changeTheme(-1)"><i class="fa-solid fa-chevron-left"></i></button>
+            <div class="theme-info">
+                <span class="theme-name" id="themeName">Premium Gold</span>
+                <div class="theme-dots" id="themeDots">
+                    <div class="dot active"></div><div class="dot"></div><div class="dot"></div><div class="dot"></div><div class="dot"></div>
+                </div>
+            </div>
+            <button class="nav-btn" onclick="changeTheme(1)"><i class="fa-solid fa-chevron-right"></i></button>
+        </div>
+        <div style="width:1px; height:30px; background:#ddd;"></div>
+        <button class="action-btn btn-print" onclick="window.print()" title="Print"><i class="fa-solid fa-print"></i></button>
+        <button class="action-btn btn-save" onclick="saveAsJPG()" title="Save JPG"><i class="fa-solid fa-download"></i></button>
+    </div>
+
+    <div class="invoice-wrapper">
+        <div class="invoice-container style-premium" id="invoice">
+            
+            <img id="bg-watermark" class="watermark" src="">
+
+            <div class="header-section">
+                <div class="logo-area" onclick="document.getElementById('logo-upload').click()">
+                    <img id="logo-img">
+                    <div id="logo-placeholder" style="text-align:center; font-size:12px; color:inherit;">
+                        <i class="fa-solid fa-camera fa-2x"></i><br>Logo
+                    </div>
+                    <input type="file" id="logo-upload" hidden onchange="loadImg(event)">
+                </div>
+
+                <div class="company-info">
+                    <div class="company-name" contenteditable="true" id="cp-name" oninput="saveData()">MOBILE CABINET</div>
+                    <div contenteditable="true" id="cp-address" oninput="saveData()" style="font-size:13px; opacity:0.9; line-height:1.6;">
+                        អាស័យដ្ឋានៈ ដីឡូត៍គ្មានលេខ, ភូមិកោករ្រិច សង្កាត់សំរោងក្រោម<br>
+                        ខណ្ឌពោធិ៍សែនជ័យ, រាជធានីភ្នំពេញ
+                    </div>
+                    <div style="margin-top:10px; font-weight:bold; font-size:14px;">Tel: 070 684 555 / 060 241 555</div>
+                </div>
+
+                <div class="invoice-meta" style="display:none;">
+                    <div style="font-size:18px; font-weight:bold; color:var(--primary);">INVOICE</div>
+                    <div>NO: INV-001</div>
+                    <div>DATE: <span id="static-date"></span></div>
+                </div>
+            </div>
+
+            <div class="customer-card">
+                <div style="width:60%">
+                    <span style="font-size:11px; text-transform:uppercase; color:#888;">អតិថិជន (Bill To):</span><br>
+                    <input type="text" value="CHANNIT" id="cust-name" oninput="saveData()" style="font-size:16px;">
+                </div>
+                <div style="text-align:right;">
+                    <span style="font-size:11px; text-transform:uppercase; color:#888;">កាលបរិច្ឆេទ (Date):</span><br>
+                    <input type="text" id="date-input" oninput="saveData()" style="text-align:right;">
+                </div>
+            </div>
+
+            <div class="desc-box" contenteditable="true" id="inv-desc" oninput="saveData()">
+                <b style="font-size:16px;">បរិយាយ (Description):</b>
+                <div style="margin-top:10px; line-height:1.8;">
+                    
+                    <div style="display:flex; gap:8px; margin-bottom:5px;">
+                        <span style="color:#b0b0b0;">■</span> 
+                        <span>ជញ្ជាំងសាំងស័ង្កសីក្បឿងស្រទាប់២ហ៊ិន គ្រោងដែក 100x100 [កម្រាស់1.5លី] បាតដែក 40x80 [កម្រាស់1.5លី] ក្រាលក្ដារក្នុងក្តារតេ កម្រាស់ 15លី [Free កំរាលកៅស៊ូ]</span>
+                    </div>
+
+                    <div style="display:flex; gap:8px; margin-bottom:5px;">
+                        <span style="color:#b0b0b0;">■</span> 
+                        <span>ការរៀបចំមាន៖ ទ្វារដែក1/ទ្វារពាក់ស្លាយ1/កញ្ចក់ហ្វ៊ិច2.1m*5m[កម្រាស់កញ្ចក់8លី]</span>
+                    </div>
+
+                    <div style="display:flex; gap:8px; margin-bottom:5px;">
+                        <span style="color:#b0b0b0;">■</span> 
+                        <span>ភ្លើង ព័ន្ធភ្លើង ឌីសង់ទ័រ ក្នុងតាក់1 ព្រីភ្លើង2 អំពូលភ្លើង2 កង្ហារបឺតខ្យល់1</span>
+                    </div>
+
+                    <div style="color:#1f506e; font-weight:bold; margin-top:10px;">
+                        ★ សម្គាល់ៈ គ្រោងពណ៌ ខ្មៅ / កំរាលកៅស៊ូ ប្រផេះ / សំយាបលៀន 0.1m
+                    </div>
+
+                    <div style="border-top: 1.5px dashed #64748b; margin: 15px 0;"></div>
+
+                    <div style="margin-bottom:5px;">
+                        💰 កក់ក្នុងតម្លៃប្រូម៉ូសិន>បញ្ចុះតម្លៃ150$ Freeដឹក190$ សំយាប60$ កំរាលកៅស៊ូ50$ កង្ហារបឺតខ្យល់1/20$
+                    </div>
+                    <div style="color:#b91c1c; font-weight:bold; margin-bottom:5px;">
+                        ♦ រយៈពេលធ្វើមួយសប្ដាហ៍(7ថ្ងៃរាប់ពីថ្ងៃកក់ប្រាក់)
+                    </div>
+                    <div style="color:#b91c1c; font-weight:bold;">
+                        ♦ ធានាលើការលិចធ្លាយរយៈពេល 6 ខែ
+                    </div>
+                </div>
+            </div>
+
+            <div class="blueprint-box" onclick="document.getElementById('bp-upload').click()">
+                <img id="bp-img" style="display:none;">
+                <span id="bp-text"><i class="fa-regular fa-image"></i> ចុចដាក់រូបប្លង់ (Blueprint)</span>
+                <input type="file" id="bp-upload" hidden onchange="loadBp(event)">
+            </div>
+
+            <table>
+                <thead>
+                    <tr>
+                        <th style="text-align:left; width:40%">បរិយាយ</th>
+                        <th style="width:15%">ទំហំ</th>
+                        <th style="width:10%">ចំនួន</th>
+                        <th style="width:15%">តម្លៃ</th>
+                        <th style="width:15%">សរុប</th>
+                        <th style="width:30px"></th>
+                    </tr>
+                </thead>
+                <tbody id="items-body">
+                    </tbody>
+            </table>
+            <button class="add-btn" onclick="addRow()">+ បន្ថែមទំនិញ</button>
+
+            <div style="overflow:hidden;">
+                <div style="float:left; width:50%; font-size:12px; color:#666;" contenteditable="true">
+                    <b>សម្គាល់:</b><br>- តម្លៃមិនបូកបញ្ចូលពន្ធ (VAT Excluded)<br>- ប្រាក់កក់មិនអាចដកវិញបានទេ
+                </div>
+                <div class="total-box">
+                    <div style="display:flex; justify-content:space-between;"><span>តម្លៃសរុប:</span> <span id="grand-total">0.00$</span></div>
+                    <div style="display:flex; justify-content:space-between; margin:5px 0;"><span>ប្រាក់កក់:</span> 
+                    <input type="number" id="deposit" value="500" oninput="calc(); saveData()" style="text-align:right; width:80px; color:inherit; border-bottom:1px solid rgba(255,255,255,0.5);"></div>
+                    <div class="grand-total" style="display:flex; justify-content:space-between;"><span>ប្រាក់នៅសល់:</span> <span id="balance">0.00$</span></div>
+                </div>
+            </div>
+
+            <div style="display:flex; justify-content:space-between; margin-top:50px; padding:0 40px;">
+                <div style="text-align:center; width:150px; border-top:1px solid #ccc; padding-top:10px;">អ្នកលក់</div>
+                <div style="text-align:center; width:150px; border-top:1px solid #ccc; padding-top:10px;">អ្នកទិញ</div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // === 🎭 THEME LOGIC ===
+        const themes = [
+            { name: "Premium Gold", class: "style-premium", color: "#d4af37" },
+            { name: "Modern Blue", class: "style-modern", color: "#1f506e" },
+            { name: "Original", class: "style-original", color: "#333" },
+            { name: "Corporate Red", class: "style-red", color: "#b91c1c" },
+            { name: "Minimalist", class: "style-minimal", color: "#000" }
+        ];
+        let currentIdx = 0;
+
+        function updateTheme() {
+            const container = document.getElementById('invoice');
+            const t = themes[currentIdx];
+            
+            // Clear all classes and add current
+            container.className = `invoice-container ${t.class}`;
+            
+            // Update UI
+            document.getElementById('themeName').innerText = t.name;
+            
+            // Update dots
+            const dots = document.querySelectorAll('.dot');
+            dots.forEach((d, i) => {
+                d.classList.toggle('active', i === currentIdx);
+                d.style.background = (i === currentIdx) ? t.color : '#ccc';
+            });
+
+            // Specific logic for "Original" style layout visibility
+            const meta = document.querySelector('.invoice-meta');
+            meta.style.display = (t.class === 'style-original') ? 'block' : 'none';
+        }
+
+        function changeTheme(dir) {
+            currentIdx = (currentIdx + dir + themes.length) % themes.length;
+            updateTheme();
+        }
+
+        // === 🖼️ IMAGE LOGIC ===
+        function loadImg(e) {
+            const url = URL.createObjectURL(e.target.files[0]);
+            const img = document.getElementById('logo-img');
+            img.src = url; img.style.display = 'block';
+            document.getElementById('logo-placeholder').style.display = 'none';
+            // Set Watermark
+            const wm = document.getElementById('bg-watermark');
+            wm.src = url; wm.style.display = 'block';
+        }
+
+        function loadBp(e) {
+            const url = URL.createObjectURL(e.target.files[0]);
+            document.getElementById('bp-img').src = url;
+            document.getElementById('bp-img').style.display = 'block';
+            document.getElementById('bp-text').style.display = 'none';
+        }
+
+        // === 💾 AUTO SAVE & LOAD SYSTEM (UPDATED) ===
+
+        // មុខងាររក្សាទុកទិន្នន័យ (Save Data)
+        function saveData() {
+            const data = {
+                cpName: document.getElementById('cp-name').innerHTML,
+                cpAddr: document.getElementById('cp-address').innerHTML,
+                custName: document.getElementById('cust-name').value,
+                date: document.getElementById('date-input').value,
+                desc: document.getElementById('inv-desc').innerHTML,
+                deposit: document.getElementById('deposit').value,
+                items: []
+            };
+
+            // រក្សាទុកតារាងទំនិញ
+            const rows = document.querySelectorAll('#items-body tr');
+            rows.forEach(row => {
+                data.items.push({
+                    desc: row.cells[0].querySelector('input').value,
+                    size: row.cells[1].querySelector('input').value,
+                    qty: row.cells[2].querySelector('input').value,
+                    price: row.cells[3].querySelector('input').value
+                });
+            });
+
+            localStorage.setItem('invoiceData', JSON.stringify(data));
+            calc();
+        }
+
+        // មុខងារទាញទិន្នន័យមកវិញ (Load Data)
+        function loadData() {
+            const saved = localStorage.getItem('invoiceData');
+            
+            // Set default date first
+            document.getElementById('date-input').value = new Date().toLocaleDateString('en-GB');
+            document.getElementById('static-date').innerText = new Date().toLocaleDateString('en-GB');
+
+            if (saved) {
+                const data = JSON.parse(saved);
+                
+                if(data.cpName) document.getElementById('cp-name').innerHTML = data.cpName;
+                if(data.cpAddr) document.getElementById('cp-address').innerHTML = data.cpAddr;
+                if(data.custName) document.getElementById('cust-name').value = data.custName;
+                if(data.date) document.getElementById('date-input').value = data.date;
+                
+                // Only load description if it has content, otherwise use the new HTML default
+                if(data.desc && data.desc.length > 20) {
+                    document.getElementById('inv-desc').innerHTML = data.desc;
+                }
+
+                if(data.deposit) document.getElementById('deposit').value = data.deposit;
+
+                // Load Table
+                const tbody = document.getElementById('items-body');
+                tbody.innerHTML = ''; 
+                
+                if (data.items && data.items.length > 0) {
+                    data.items.forEach(item => addRow(item));
+                } else {
+                    // Default Item if empty
+                    addRow({desc: "ទូ (Mobile Cabinet)", size: "3m x 6m", qty: 1, price: 1650});
+                }
+            } else {
+                // If no save data, add default row
+                 addRow({desc: "ទូ (Mobile Cabinet)", size: "3m x 6m", qty: 1, price: 1650});
+            }
+            calc();
+        }
+
+        // === 🧮 CALCULATION & ROW LOGIC ===
+        function calc() {
+            let rows = document.querySelectorAll('#items-body tr'), g = 0;
+            rows.forEach(r => {
+                let q = parseFloat(r.querySelector('.qty').value)||0, p = parseFloat(r.querySelector('.price').value)||0;
+                r.querySelector('.total-cell').innerText = (q*p).toFixed(2); g += q*p;
+            });
+            document.getElementById('grand-total').innerText = g.toFixed(2)+'$';
+            document.getElementById('balance').innerText = (g - (parseFloat(document.getElementById('deposit').value)||0)).toFixed(2)+'$';
+        }
+
+        function addRow(data = null) {
+            let tr = document.createElement('tr');
+            
+            const desc = data ? data.desc : '';
+            const size = data ? data.size : '';
+            const qty = data ? data.qty : 1;
+            const price = data ? data.price : 0;
+
+            tr.innerHTML = `
+                <td style="text-align:left"><input type="text" value="${desc}" placeholder="..." oninput="saveData()"></td>
+                <td><input type="text" value="${size}" class="calc-input" oninput="saveData()"></td>
+                <td><input type="number" value="${qty}" class="qty" oninput="calc(); saveData()" style="text-align:center"></td>
+                <td><input type="number" value="${price}" class="price" oninput="calc(); saveData()" style="text-align:center"></td>
+                <td class="total-cell" style="font-weight:bold;text-align:center">0.00</td>
+                <td><i class="fa-solid fa-trash delete-btn" style="color:#ef4444;cursor:pointer" onclick="this.closest('tr').remove();calc();saveData()"></i></td>
+            `;
+            document.getElementById('items-body').appendChild(tr);
+            calc();
+        }
+
+        function saveAsJPG() {
+            const btn = document.querySelector(".btn-save");
+            const oldText = btn.innerHTML;
+            btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i>';
+            html2canvas(document.getElementById("invoice"), { 
+                scale: 4, useCORS: true,
+                ignoreElements: (el) => el.classList.contains('add-btn') || el.classList.contains('delete-btn')
+            }).then(c => {
+                let a = document.createElement('a'); a.download = 'Invoice-Pro-' + Date.now() + '.jpg'; 
+                a.href = c.toDataURL('image/jpeg', 0.95); a.click();
+                btn.innerHTML = oldText;
+            });
+        }
+
+        // === 🚀 INITIALIZE ===
+        window.onload = function() {
+            // Default Logo
+            const defaultLogoUrl = 'https://i.postimg.cc/9F2RmzjY/386349162-761447375992081-6355461432488414794-n.jpg';
+            const logoImg = document.getElementById('logo-img');
+            const logoPlaceholder = document.getElementById('logo-placeholder');
+            const watermarkImg = document.getElementById('bg-watermark');
+
+            if (logoImg && logoPlaceholder && watermarkImg) {
+                logoImg.src = defaultLogoUrl;
+                logoImg.style.display = 'block';
+                logoPlaceholder.style.display = 'none';
+                watermarkImg.src = defaultLogoUrl;
+            }
+
+            // Load Saved Data
+            loadData();
+        };
+
+        calc();
+    </script>
+</body>
+</html>
